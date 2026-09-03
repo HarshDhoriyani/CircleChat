@@ -1,0 +1,192 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  html:not(.dark) {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: #f8fafc;
+    color: #0f172a;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .dark body {
+    background-color: #090a0e;
+    color: #f8fafc;
+  }
+
+  /* Beautiful & Readable Text Selection */
+  ::selection {
+    background-color: rgba(139, 92, 246, 0.25);
+    color: #4c1d95;
+    -webkit-text-fill-color: #4c1d95;
+  }
+
+  .dark ::selection {
+    background-color: rgba(139, 92, 246, 0.45);
+    color: #ffffff;
+    -webkit-text-fill-color: #ffffff;
+  }
+
+  /* Custom Sleek Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(150, 150, 150, 0.25);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 92, 246, 0.5);
+  }
+}
+
+@layer components {
+  .glass-card {
+    background: #ffffff;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  .dark .glass-card {
+    background: rgba(22, 24, 34, 0.75);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+
+  .glass-card-hover {
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .glass-card-hover:hover {
+    background: #f8fafc;
+    border-color: rgba(139, 92, 246, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .dark .glass-card-hover:hover {
+    background: rgba(28, 31, 46, 0.85);
+    border-color: rgba(139, 92, 246, 0.3);
+  }
+
+  .brand-gradient-bg {
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #06b6d4 100%);
+  }
+
+  .brand-gradient-text {
+    background: linear-gradient(135deg, #7c3aed 0%, #6366f1 40%, #0891b2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .dark .brand-gradient-text {
+    background: linear-gradient(135deg, #a78bfa 0%, #c4b5fd 40%, #22d3ee 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .badge-pulse {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    animation: pulse-ring 2s infinite;
+  }
+
+  .bubble-sent {
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px 0 rgba(109, 40, 217, 0.25);
+  }
+
+  .bubble-received {
+    background: #ffffff;
+    color: #0f172a;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+  }
+
+  .dark .bubble-received {
+    background: #1e202d;
+    color: #e2e8f0;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: none;
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+/* Typing bounce animation */
+@keyframes bounce-subtle {
+  0%, 80%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  40% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+.typing-dot-1 {
+  animation: bounce-subtle 1.2s infinite ease-in-out;
+}
+.typing-dot-2 {
+  animation: bounce-subtle 1.2s infinite ease-in-out 0.2s;
+}
+.typing-dot-3 {
+  animation: bounce-subtle 1.2s infinite ease-in-out 0.4s;
+}
+
+/* AI Shimmer Gradient */
+.ai-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(139, 92, 246, 0.08) 0%,
+    rgba(6, 182, 212, 0.2) 50%,
+    rgba(139, 92, 246, 0.08) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
