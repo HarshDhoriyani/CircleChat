@@ -2,7 +2,7 @@
 
 > A production-grade, full-stack team messaging and conversation platform engineered with **Node.js, Express, Socket.IO v4, MongoDB, React 19, Tailwind CSS, and Google Gemini AI**.
 
-![CircleChat Banner](https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80)
+![CircleChat Banner](assets/banner.png)
 
 ---
 
