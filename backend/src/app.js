@@ -20,11 +20,6 @@ app.use(
 );
 
 // CORS configuration
-const defaultOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173'];
-const envOrigins = (process.env.CLIENT_URL || '')
-  .split(',')
-  .map((url) => url.trim())
-  .filter(Boolean);
 const allowedOrigins = getAllowedOrigins();
 
 app.use(
@@ -35,7 +30,7 @@ app.use(
       if (!allowedOrigins.has(origin)) {
         return callback(new Error(`Origin ${origin} is not allowed by CORS`));
       }
-      return callback(null, true); // Permissive fallback for seamless client preview deployments
+      return callback(null, true);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

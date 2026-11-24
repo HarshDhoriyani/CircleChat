@@ -8,11 +8,6 @@ import { getAllowedOrigins } from '../config/env.js';
 let ioInstance = null;
 
 export const initSocket = (httpServer) => {
-  const defaultOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173'];
-  const envOrigins = (process.env.CLIENT_URL || '')
-    .split(',')
-    .map((url) => url.trim())
-    .filter(Boolean);
   const allowedOrigins = getAllowedOrigins();
 
   const io = new Server(httpServer, {

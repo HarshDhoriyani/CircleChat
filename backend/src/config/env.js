@@ -25,7 +25,14 @@ export function getAllowedOrigins() {
   const configuredOrigins = (process.env.CLIENT_URL || '')
     .split(',')
     .map((origin) => origin.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((origin) => {
+      try {
+        return new URL(origin).origin;
+      } catch {
+        throw new Error(`Invalid CLIENT_URL origin: ${origin}`);
+      }
+    });
 
   return new Set([...localOrigins, ...configuredOrigins]);
 }
