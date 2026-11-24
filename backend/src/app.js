@@ -7,6 +7,7 @@ import fs from 'fs';
 import routes from './routes/index.js';
 import { errorHandler, notFoundHandler } from './middleware/errorMiddleware.js';
 import { generalLimiter } from './middleware/rateLimitMiddleware.js';
+import { getAllowedOrigins } from './config/env.js';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -24,15 +25,15 @@ const envOrigins = (process.env.CLIENT_URL || '')
   .split(',')
   .map((url) => url.trim())
   .filter(Boolean);
-const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
+const allowedOrigins = getAllowedOrigins();
 
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-        return callback(null, true);
+      if (!allowedOrigins.has(origin)) {
+        return callback(new Error(`Origin ${origin} is not allowed by CORS`));
       }
       return callback(null, true); // Permissive fallback for seamless client preview deployments
     },
@@ -52,7 +53,6 @@ const uploadsDir = path.resolve(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
-app.use('/uploads', express.static(uploadsDir));
 
 // Rate Limiting
 app.use('/api', generalLimiter);

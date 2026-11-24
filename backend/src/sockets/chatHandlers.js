@@ -7,6 +7,30 @@ export const handleChatEvents = (io, socket) => {
   const userId = socket.userId;
   const user = socket.user;
 
+  const emitUnauthorized = (conversationId) => {
+    socket.emit(SOCKET_EVENTS.ERROR, {
+      conversationId,
+      message: 'Unauthorized: You are not a participant in this conversation',
+    });
+  };
+
+  const requireMembership = async (conversationId) => {
+    if (!conversationId) return null;
+
+    try {
+      return await Conversation.findOne({
+        _id: conversationId,
+        participants: userId,
+      }).select('_id participants creator admins');
+    } catch (err) {
+      logger.warn(`Invalid conversationId received from socket ${socket.id}: ${err.message}`);
+      return null;
+    }
+  };
+
+  const isJoinedToConversation = (conversationId) =>
+    socket.rooms.has(`conv:${conversationId}`);
+
   /**
    * Client joins a conversation room: 'conv:<conversationId>'
    */
@@ -14,16 +38,10 @@ export const handleChatEvents = (io, socket) => {
     if (!conversationId) return;
 
     try {
-      // Verify user is a participant of this conversation
-      const conv = await Conversation.findOne({
-        _id: conversationId,
-        participants: userId,
-      });
+      const conv = await requireMembership(conversationId);
 
       if (!conv) {
-        return socket.emit(SOCKET_EVENTS.ERROR, {
-          message: 'Unauthorized: You are not a participant in this conversation',
-        });
+        return emitUnauthorized(conversationId);
       }
 
       const roomName = `conv:${conversationId}`;
@@ -48,39 +66,40 @@ export const handleChatEvents = (io, socket) => {
    * Client broadcasts a sent message
    */
   socket.on(SOCKET_EVENTS.SEND_MESSAGE, async ({ conversationId, message }) => {
-    if (!conversationId || !message) return;
+    const messageId = message?._id || message?.id;
+    if (!conversationId || !messageId) return;
+
+    const conv = await requireMembership(conversationId);
+    if (!conv) return emitUnauthorized(conversationId);
+    if (!isJoinedToConversation(conversationId)) return;
 
     try {
-      const conv = await Conversation.findById(conversationId).select('participants');
-      const targetRooms = [`conv:${conversationId}`];
+      const persistedMessage = await Message.findOne({
+          _id: messageId,
+          conversationId,
+          sender: userId,
+      }).populate('sender', 'name username email avatar status');
 
-      if (conv?.participants) {
-        conv.participants.forEach((pId) => {
-          if (pId.toString() !== userId.toString()) {
-            targetRooms.push(`user:${pId}`);
-          }
-        });
-      }
+      if (!persistedMessage) return;
 
-      // Broadcast to room union (deduplicated by Socket.io)
-      socket.to(targetRooms).emit(SOCKET_EVENTS.RECEIVE_MESSAGE, {
-        conversationId,
-        message,
-      });
-    } catch {
-      // Fallback direct emit to conversation room
       socket.to(`conv:${conversationId}`).emit(SOCKET_EVENTS.RECEIVE_MESSAGE, {
         conversationId,
-        message,
+        message: persistedMessage,
       });
+    } catch (err) {
+      logger.warn(`Rejected socket send event: ${err.message}`);
     }
   });
 
   /**
    * Typing Indicators: start & stop
    */
-  socket.on(SOCKET_EVENTS.TYPING_START, ({ conversationId }) => {
+  socket.on(SOCKET_EVENTS.TYPING_START, async ({ conversationId }) => {
     if (!conversationId) return;
+    const conv = await requireMembership(conversationId);
+    if (!conv) return emitUnauthorized(conversationId);
+    if (!isJoinedToConversation(conversationId)) return;
+
     const roomName = `conv:${conversationId}`;
 
     socket.to(roomName).emit(SOCKET_EVENTS.USER_TYPING, {
@@ -93,8 +112,12 @@ export const handleChatEvents = (io, socket) => {
     });
   });
 
-  socket.on(SOCKET_EVENTS.TYPING_STOP, ({ conversationId }) => {
+  socket.on(SOCKET_EVENTS.TYPING_STOP, async ({ conversationId }) => {
     if (!conversationId) return;
+    const conv = await requireMembership(conversationId);
+    if (!conv) return emitUnauthorized(conversationId);
+    if (!isJoinedToConversation(conversationId)) return;
+
     const roomName = `conv:${conversationId}`;
 
     socket.to(roomName).emit(SOCKET_EVENTS.USER_STOP_TYPING, {
@@ -110,8 +133,20 @@ export const handleChatEvents = (io, socket) => {
   /**
    * Read Receipts
    */
-  socket.on(SOCKET_EVENTS.MARK_AS_READ, ({ conversationId, messageId }) => {
+  socket.on(SOCKET_EVENTS.MARK_AS_READ, async ({ conversationId, messageId }) => {
     if (!conversationId) return;
+    const conv = await requireMembership(conversationId);
+    if (!conv) return emitUnauthorized(conversationId);
+    if (!isJoinedToConversation(conversationId)) return;
+
+    if (messageId) {
+      const messageExists = await Message.exists({
+        _id: messageId,
+        conversationId,
+      });
+      if (!messageExists) return;
+    }
+
     const roomName = `conv:${conversationId}`;
 
     socket.to(roomName).emit(SOCKET_EVENTS.MESSAGE_READ, {
@@ -124,22 +159,72 @@ export const handleChatEvents = (io, socket) => {
   /**
    * Message Edited & Deleted broadcasts
    */
-  socket.on(SOCKET_EVENTS.MESSAGE_EDITED, ({ conversationId, message }) => {
-    if (!conversationId || !message) return;
-    socket.to(`conv:${conversationId}`).emit(SOCKET_EVENTS.MESSAGE_EDITED, {
+  socket.on(SOCKET_EVENTS.MESSAGE_EDITED, async ({ conversationId, message }) => {
+    const messageId = message?._id || message?.id;
+    if (!conversationId || !messageId) return;
+
+    const conv = await requireMembership(conversationId);
+    if (!conv) return emitUnauthorized(conversationId);
+    if (!isJoinedToConversation(conversationId)) return;
+
+    try {
+      const persistedMessage = await Message.findOne({
+      _id: messageId,
       conversationId,
-      message,
-    });
+      sender: userId,
+      }).populate('sender', 'name username email avatar status');
+
+      if (!persistedMessage) return;
+
+      socket.to(`conv:${conversationId}`).emit(SOCKET_EVENTS.MESSAGE_EDITED, {
+        conversationId,
+        message: persistedMessage,
+      });
+    } catch (err) {
+      logger.warn(`Rejected socket edit event: ${err.message}`);
+    }
   });
 
-  socket.on(SOCKET_EVENTS.MESSAGE_DELETED, ({ conversationId, messageId, deleteType, message }) => {
+  socket.on(SOCKET_EVENTS.MESSAGE_DELETED, async ({ conversationId, messageId, deleteType }) => {
     if (!conversationId || !messageId) return;
-    socket.to(`conv:${conversationId}`).emit(SOCKET_EVENTS.MESSAGE_DELETED, {
-      conversationId,
-      messageId,
-      deleteType,
-      message,
-    });
+
+    const conv = await requireMembership(conversationId);
+    if (!conv) return emitUnauthorized(conversationId);
+    if (!isJoinedToConversation(conversationId)) return;
+
+    try {
+      const persistedMessage = await Message.findOne({
+        _id: messageId,
+        conversationId,
+      }).populate('sender', 'name username email avatar status');
+
+      if (!persistedMessage) return;
+
+      if (deleteType === 'everyone') {
+        const isSender = persistedMessage.sender._id.toString() === userId.toString();
+        const isAdmin =
+          conv.creator?.toString() === userId.toString() ||
+          conv.admins?.some((adminId) => adminId.toString() === userId.toString());
+
+        if (!isSender && !isAdmin) return emitUnauthorized(conversationId);
+
+        socket.to(`conv:${conversationId}`).emit(SOCKET_EVENTS.MESSAGE_DELETED, {
+          conversationId,
+          messageId,
+          deleteType: 'everyone',
+          message: persistedMessage,
+        });
+        return;
+      }
+
+      socket.to(`user:${userId}`).emit(SOCKET_EVENTS.MESSAGE_DELETED, {
+        conversationId,
+        messageId,
+        deleteType: 'me',
+      });
+    } catch (err) {
+      logger.warn(`Rejected socket delete event: ${err.message}`);
+    }
   });
 };
 

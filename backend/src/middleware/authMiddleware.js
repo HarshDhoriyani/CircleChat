@@ -22,7 +22,7 @@ export const protect = asyncHandler(async (req, res, next) => {
   try {
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || 'aetherchat_jwt_secret_secure_key_development_2026'
+      process.env.JWT_SECRET,
     );
 
     const user = await User.findById(decoded.id || decoded._id).select('-passwordHash');

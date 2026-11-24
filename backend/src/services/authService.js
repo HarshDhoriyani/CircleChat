@@ -20,7 +20,7 @@ export const authService = {
         tokenVersion: version,
         sessionId: activeSessionId,
       },
-      process.env.JWT_SECRET || 'aetherchat_jwt_secret_secure_key_development_2026',
+      process.env.JWT_SECRET,
       {
         expiresIn: process.env.JWT_EXPIRES_IN || '7d',
       }
