@@ -45,7 +45,6 @@ export const register = asyncHandler(async (req, res) => {
         _id: user._id,
         name: user.name,
         username: user.username,
-        email: user.email,
         avatar: user.avatar,
         status: user.status,
         customStatus: user.customStatus,
