@@ -30,6 +30,6 @@ export const getFileExtension = (filename = '') => {
  * Supported MIME types & limits
  */
 export const ACCEPTED_FILE_TYPES =
-  'image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar';
+  'image/jpeg,image/png,image/webp,image/gif,application/pdf,.doc,.docx,.xls,.xlsx,.txt,.zip';
 
 export const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB
